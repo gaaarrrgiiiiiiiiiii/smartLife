@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Profile - SmartLife{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Main Profile Content (left/center) -->
+    <div class="col-lg-8 col-md-12 mb-4">
+        <h2>Profile Page</h2>
+        <p>Welcome, {{ session.get('user_name', 'User') }}!</p>
+
+        <div class="d-flex justify-content-between" style="gap: 20px; flex-wrap: wrap;">
+
+            <!-- Portfolio Card -->
+            <div class="card mb-3" style="background-color: #1e1e1e; border: none; border-radius: 35px; padding: 20px; text-align: center; flex: 1;">
+                <div class="card-body" style="color: #f1f1f1;">
+                    <h5 style="font-size: 0.9rem; margin-bottom: 4px; color: #bbb;">Portfolio Value</h5>
+                    <p style="font-size: 2rem; font-weight: 600; margin-bottom: 20px;">
+                        ${{ total_portfolio_value }}
+                    </p>
+                    <div style="display: flex; justify-content: space-between; text-align: center;">
+                        <div style="flex: 1;">
+                            <h6 style="font-size: 0.8rem; margin-bottom: 3px; color: #bbb;">Invested</h6>
+                            <p style="font-size: 1.2rem; font-weight: 500;">${{ total_invested }}</p>
+                        </div>
+                        <div style="flex: 1;">
+                            <h6 style="font-size: 0.8rem; margin-bottom: 3px; color: #bbb;">Cash</h6>
+                            <p style="font-size: 1.2rem; font-weight: 500;">${{ cash_balance }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Portfolio History Graph -->
+            <div class="card mb-3" style="background-color: #1e1e1e; border: none; border-radius: 35px; padding: 20px; flex: 1;">
+                <div class="card-body" style="color: #f1f1f1; text-align: center;">
+                    <h5 style="margin-bottom: 15px;">Portfolio History</h5>
+                    <canvas id="portfolioChart" height="180"></canvas>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Asset Allocation Pie Chart -->
+        <!-- Asset Allocation Pie Chart (Smaller Card) -->
+        <div class="card" style="background-color: #1e1e1e; border: none; border-radius: 35px; margin-top: 20px; max-width: 400px; margin-left: auto; margin-right: auto;">
+            <div class="card-body" style="color: #FFF27A; text-align: center;">
+                <h5 class="card-title" style="color: #fff; margin-bottom: 15px;">Asset Allocation</h5>
+                <canvas id="assetChart" height="200"></canvas>
+            </div>
+        </div>
+
+
+    </div>
+
+    <!-- Right Sidebar -->
+    <div class="col-lg-4 col-md-12">
+        <div class="card mb-3" style="background-color: #1e1e1e; border: none; border-radius: 15px; padding: 15px; color: #ffffff;">
+            <h5 class="text-center" style="color: #fff; margin-bottom: 15px;">Information</h5>
+            <div style="background: linear-gradient(135deg, #9b8ff5, #7d6be8); padding: 20px; border-radius: 12px; color: white;">
+                <p style="margin: 0; font-weight: bold;">{{ session.get('user_name') }}</p>
+                <p style="margin: 2px 0 10px 0;">{{ user_email }}</p>
+                <small style="opacity: 0.8;">Joined On {{ joined_on }}</small>
+            </div>
+
+            <h6 style="margin-top: 20px; color: #bbb;">My Stocks</h6>
+            <div>
+                {% for holding in holdings %}
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #333;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 12px; height: 12px; background-color: gray; border-radius: 50%;"></div>
+                        <span>{{ holding.ticker }}</span>
+                    </div>
+                    <span style="color: #00ff7f;">${{ holding.current_price | round(2) }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ---------------- Chart.js Script ---------------- -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Portfolio Line Chart
+    const ctx = document.getElementById('portfolioChart').getContext('2d');
+    const portfolioDates = JSON.parse('{{ portfolio_history_dates | tojson | safe }}');
+    const portfolioValues = JSON.parse('{{ portfolio_history_values | tojson | safe }}');
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: portfolioDates,
+            datasets: [{
+                label: 'Portfolio Value',
+                data: portfolioValues,
+                borderColor: '#00ff7f',
+                backgroundColor: 'rgba(0, 255, 127, 0.2)',
+                tension: 0.2,
+                fill: true,
+                pointRadius: 3,
+                pointHoverRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                x: { ticks: { color: '#fff' }, grid: { color: '#333' } },
+                y: { ticks: { color: '#fff' }, grid: { color: '#333' } }
+            },
+            plugins: { legend: { labels: { color: '#fff' } } }
+        }
+    });
+
+    // Asset Allocation Pie Chart
+    const assetCtx = document.getElementById('assetChart').getContext('2d');
+    const assetLabels = JSON.parse('{{ asset_labels | tojson | safe }}');
+    const assetValues = JSON.parse('{{ asset_values | tojson | safe }}');
+
+    new Chart(assetCtx, {
+        type: 'pie',
+        data: {
+            labels: assetLabels,
+            datasets: [{
+                data: assetValues,
+                backgroundColor: ['#7d6be8', '#00ff7f', '#ffcc00', '#ff4d4d', '#1e90ff'],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            plugins: {
+                legend: { labels: { color: '#fff', font: { size: 12 } } }
+            }
+        }
+    });
+</script>
+
+{% endblock %}
