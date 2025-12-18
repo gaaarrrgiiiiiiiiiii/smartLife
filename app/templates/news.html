@@ -3,28 +3,176 @@
 {% block title %}Stock News - SmartLife{% endblock %}
 
 {% block content %}
-<div class="row">
-    <!-- Main Content (News) -->
-    <div class="col-12 mb-4">
-        <h2>Latest Stock News</h2>
-        <p>Welcome, {{ session.get('user_name', 'User') }}! Here are the top news for today:</p>
+<style>
+    .news-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 2.5rem;
+        border-radius: 20px;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
 
+    .news-header h2 {
+        color: #ffffff;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        font-size: 2.5rem;
+    }
+
+    .news-header p {
+        color: #f0f0f0;
+        font-size: 1.1rem;
+        margin-bottom: 0;
+    }
+
+    .news-card {
+        background: linear-gradient(180deg, rgba(30,30,30,0.95), rgba(20,20,20,0.95));
+        border: 1px solid rgba(255,255,255,0.03);
+        border-radius: 20px;
+        margin-bottom: 1.5rem;
+        transition: all 0.3s ease;
+        overflow: hidden;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+        position: relative;
+    }
+
+    .news-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+    }
+
+    .news-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 5px;
+        height: 100%;
+        background: linear-gradient(180deg, #FFF27A, purple);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .news-card:hover::before {
+        opacity: 1;
+    }
+
+    .news-card-body {
+        padding: 2rem;
+        position: relative;
+    }
+
+    .news-title {
+        color: #FFF27A;
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        line-height: 1.4;
+        text-decoration: none;
+        display: block;
+        transition: color 0.3s ease;
+    }
+
+    .news-title:hover {
+        color: #FFD700;
+        text-decoration: none;
+    }
+
+    .news-description {
+        color: #d0d0d0;
+        font-size: 1rem;
+        line-height: 1.6;
+        margin-bottom: 1.5rem;
+    }
+
+    .news-meta {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        color: #999;
+        font-size: 0.9rem;
+    }
+
+    .news-meta-icon {
+        width: 16px;
+        height: 16px;
+        fill: #999;
+    }
+
+    .news-badge {
+        display: inline-block;
+        background: rgba(255, 242, 122, 0.15);
+        color: #FFF27A;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+
+    .no-news {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: #2d2d2d;
+        border-radius: 20px;
+        color: #999;
+    }
+
+    .no-news-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    @media (max-width: 768px) {
+        .news-header h2 {
+            font-size: 2rem;
+        }
+
+        .news-card-body {
+            padding: 1.5rem;
+        }
+
+        .news-title {
+            font-size: 1.25rem;
+        }
+    }
+</style>
+
+<div class="row">
+    <div class="col-12">
+        <!-- Header Section -->
+        <div class="news-header">
+            <h2>Latest Stock News</h2>
+            <p>Welcome back, <strong>{{ session.get('user_name', 'User') }}</strong>! Stay informed with today's top market updates</p>
+        </div>
+
+        <!-- News Articles -->
         {% if news %}
             {% for article in news %}
-                <div class="card mb-3" style="background-color: #2d2d2d; border: 1px solid #444; border-radius: 35px; border:none">
-                    <div class="card-body" style="color: #FFF27A; margin-left:10px; margin-right: 10px;">
-                        <h5 class="card-title">
-                            <a href="{{ article.url }}" target="_blank" style="color: #FFF27A; text-decoration: none;">
-                                {{ article.title }}
-                            </a>
-                        </h5>
-                        <p class="card-text">{{ article.description }}</p>
-                        <small>Published at: {{ article.publishedAt }}</small>
+                <div class="news-card">
+                    <div class="news-card-body">
+                        <a href="{{ article.url }}" target="_blank" class="news-title">
+                            {{ article.title }}
+                        </a>
+                        
+                        <p class="news-description">{{ article.description }}</p>
+                        
+                        <div class="news-meta">
+                            <svg class="news-meta-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                                <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.2 3.2.8-1.3-4.5-2.7V7z"/>
+                            </svg>
+                            <span>{{ article.publishedAt }}</span>
+                            <span class="news-badge">Stock Market</span>
+                        </div>
                     </div>
                 </div>
             {% endfor %}
         {% else %}
-            <p>No news available at the moment.</p>
+            <div class="no-news">
+                <div class="no-news-icon">📰</div>
+                <h4>No News Available</h4>
+                <p>Check back later for the latest stock market updates</p>
+            </div>
         {% endif %}
     </div>
 </div>

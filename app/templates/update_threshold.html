@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+    .threshold-update-container {
+        max-width: 650px;
+        margin: 2rem auto;
+    }
+
+    .page-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 2rem;
+        border-radius: 20px;
+        margin-bottom: 2rem;
+        text-align: center;
+        color: #fff;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .page-header h2 {
+        font-weight: 700;
+        font-size: 2rem;
+        margin: 0;
+    }
+
+    .ticker-badge {
+        display: inline-block;
+        margin-top: 0.5rem;
+        background: rgba(255, 255, 255, 0.15);
+        padding: 0.4rem 1.2rem;
+        border-radius: 20px;
+        font-weight: 600;
+    }
+
+    .threshold-form {
+        background: linear-gradient(180deg, rgba(30,30,30,0.95), rgba(20,20,20,0.95));
+        border: 1px solid rgba(255,255,255,0.05);
+        border-radius: 20px;
+        padding: 2.5rem;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+    }
+
+    .form-group {
+        margin-bottom: 2rem;
+    }
+
+    .form-group label {
+        color: #FFF27A;
+        font-weight: 600;
+        display: block;
+        margin-bottom: 0.6rem;
+    }
+
+    .info-display {
+        background: rgba(255, 242, 122, 0.1);
+        border: 1px solid rgba(255, 242, 122, 0.2);
+        border-radius: 10px;
+        padding: 1rem;
+        color: #d0d0d0;
+    }
+
+    .info-display.ai-suggestion {
+        background: rgba(103, 126, 234, 0.1);
+        border: 1px solid rgba(103, 126, 234, 0.3);
+        color: #a8b8ff;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .ai-badge {
+        background: rgba(103, 126, 234, 0.3);
+        padding: 0.25rem 0.6rem;
+        border-radius: 10px;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        font-weight: 700;
+    }
+
+    .form-input, .form-select {
+        width: 100%;
+        background: rgba(255,255,255,0.05);
+        border: 2px solid rgba(255,242,122,0.3);
+        border-radius: 10px;
+        padding: 1rem;
+        color: #fff;
+        font-size: 1rem;
+    }
+
+    .form-input:focus, .form-select:focus {
+        border-color: #FFF27A;
+        outline: none;
+        background: rgba(255,255,255,0.08);
+    }
+
+    .fallback-hint {
+        color: #999;
+        font-size: 0.9rem;
+        margin-top: 0.3rem;
+    }
+
+    .button-group {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+
+    .btn-primary {
+        flex: 1;
+        background: linear-gradient(135deg, #FFF27A 0%, #FFD700 100%);
+        color: #1a1a1a;
+        border: none;
+        border-radius: 12px;
+        padding: 1rem 2rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .btn-secondary {
+        flex: 1;
+        background: rgba(255,255,255,0.05);
+        color: #d0d0d0;
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 12px;
+        padding: 1rem 2rem;
+        text-align: center;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(255,242,122,0.4);
+    }
+
+    .btn-secondary:hover {
+        background: rgba(255,255,255,0.08);
+        color: #fff;
+        transform: translateY(-2px);
+    }
+
+    @media (max-width: 768px) {
+        .button-group {
+            flex-direction: column;
+        }
+    }
+</style>
+
+<div class="threshold-update-container">
+    <div class="page-header">
+        <h2>Update Threshold</h2>
+        <div class="ticker-badge">{{ ticker }}</div>
+    </div>
+
+    <form method="POST" class="threshold-form">
+        <!-- Current Threshold -->
+        <div class="form-group">
+            <label>Current Threshold</label>
+            <div class="info-display">
+                {{ current_value if current_value else 'Not set' }}
+            </div>
+        </div>
+
+        <!-- AI Suggested Threshold -->
+        <div class="form-group">
+            <label>AI Suggested Threshold</label>
+            <div class="info-display ai-suggestion">
+                <span class="ai-badge">AI</span>
+                <span>{{ suggested if suggested else 'N/A' }}</span>
+            </div>
+        </div>
+
+        <!-- New Threshold -->
+        <div class="form-group">
+            <label>New Threshold</label>
+            <input 
+                type="number" 
+                step="0.01" 
+                name="threshold" 
+                class="form-input"
+                required 
+                value="{{ suggested if suggested else '' }}"
+                placeholder="Enter new threshold value">
+        </div>
+
+        <!-- Fallback Strategy -->
+        <div class="form-group">
+            <label>Fallback Strategy</label>
+            <select name="fallback_strategy" class="form-select" id="fallback_select">
+                <option value="hold_cash" {% if fallback_strategy == 'hold_cash' %}selected{% endif %}>
+                    🏦 Hold Cash (Default Safe Mode)
+                </option>
+                <option value="best_performer" {% if fallback_strategy == 'best_performer' %}selected{% endif %}>
+                    📈 Switch to Best Performer in Portfolio
+                </option>
+                <option value="safe_asset" {% if fallback_strategy == 'safe_asset' %}selected{% endif %}>
+                    🛡️ Switch to Pre-Selected Safe Asset / ETF
+                </option>
+            </select>
+            <p class="fallback-hint">
+                Choose what happens when this stock breaks below threshold.
+            </p>
+        </div>
+
+        <!-- Safe Asset Input (only if user chooses safe_asset) -->
+        <div class="form-group" id="safe_asset_group" style="display:none;">
+            <label>Safe Asset / ETF (e.g., SPY, QQQ, GLD, FD)</label>
+            <input 
+                type="text" 
+                name="safe_asset" 
+                class="form-input"
+                placeholder="Enter fallback asset symbol"
+                value="{{ safe_asset if safe_asset else '' }}">
+            <p class="fallback-hint">
+                This asset will be used if the fallback strategy is set to "Safe Asset".
+            </p>
+        </div>
+
+        <div class="button-group">
+            <a href="{{ url_for('threshold.thresholds') }}" class="btn-secondary">← Back</a>
+            <button type="submit" class="btn-primary">💾 Save Threshold</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    // Toggle Safe Asset input visibility
+    const select = document.getElementById('fallback_select');
+    const safeAssetGroup = document.getElementById('safe_asset_group');
+
+    function toggleSafeAsset() {
+        if (select.value === 'safe_asset') {
+            safeAssetGroup.style.display = 'block';
+        } else {
+            safeAssetGroup.style.display = 'none';
+        }
+    }
+
+    toggleSafeAsset();
+    select.addEventListener('change', toggleSafeAsset);
+</script>
+{% endblock %}
+

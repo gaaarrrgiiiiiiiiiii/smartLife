@@ -3,136 +3,612 @@
 {% block title %}Profile - SmartLife{% endblock %}
 
 {% block content %}
-<div class="row">
-    <!-- Main Profile Content (left/center) -->
-    <div class="col-lg-8 col-md-12 mb-4">
-        <h2>Profile Page</h2>
-        <p>Welcome, {{ session.get('user_name', 'User') }}!</p>
+<style>
+  /* ---------- Dashboard main content styles (keeps sidebar/top intact) ---------- */
+  .dashboard-wrap {
+    padding: 22px;
+    color: #e8e8e8;
+    min-height: 80vh;
+  }
 
-        <div class="d-flex justify-content-between" style="gap: 20px; flex-wrap: wrap;">
+  .dash-row {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
 
-            <!-- Portfolio Card -->
-            <div class="card mb-3" style="background-color: #1e1e1e; border: none; border-radius: 35px; padding: 20px; text-align: center; flex: 1;">
-                <div class="card-body" style="color: #f1f1f1;">
-                    <h5 style="font-size: 0.9rem; margin-bottom: 4px; color: #bbb;">Portfolio Value</h5>
-                    <p style="font-size: 2rem; font-weight: 600; margin-bottom: 20px;">
-                        ${{ total_portfolio_value }}
-                    </p>
-                    <div style="display: flex; justify-content: space-between; text-align: center;">
-                        <div style="flex: 1;">
-                            <h6 style="font-size: 0.8rem; margin-bottom: 3px; color: #bbb;">Invested</h6>
-                            <p style="font-size: 1.2rem; font-weight: 500;">${{ total_invested }}</p>
-                        </div>
-                        <div style="flex: 1;">
-                            <h6 style="font-size: 0.8rem; margin-bottom: 3px; color: #bbb;">Cash</h6>
-                            <p style="font-size: 1.2rem; font-weight: 500;">${{ cash_balance }}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+  /* Left / main column */
+  .dash-main {
+    flex: 1 1 64%;
+    min-width: 320px;
+  }
 
-            <!-- Portfolio History Graph -->
-            <div class="card mb-3" style="background-color: #1e1e1e; border: none; border-radius: 35px; padding: 20px; flex: 1;">
-                <div class="card-body" style="color: #f1f1f1; text-align: center;">
-                    <h5 style="margin-bottom: 15px;">Portfolio History</h5>
-                    <canvas id="portfolioChart" height="180"></canvas>
-                </div>
-            </div>
+  /* Right sidebar column (within content area) */
+  .dash-side {
+    flex: 0 0 320px;
+    min-width: 260px;
+  }
 
-        </div>
+  /* Card base */
+  .card-dash {
+    background: linear-gradient(180deg, rgba(30,30,30,0.95), rgba(20,20,20,0.95));
+    border-radius: 28px;
+    padding: 18px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.03);
+    color: #eaeaea;
+  }
 
-        <!-- Asset Allocation Pie Chart -->
-        <!-- Asset Allocation Pie Chart (Smaller Card) -->
-        <div class="card" style="background-color: #1e1e1e; border: none; border-radius: 35px; margin-top: 20px; max-width: 400px; margin-left: auto; margin-right: auto;">
-            <div class="card-body" style="color: #FFF27A; text-align: center;">
-                <h5 class="card-title" style="color: #fff; margin-bottom: 15px;">Asset Allocation</h5>
-                <canvas id="assetChart" height="200"></canvas>
-            </div>
-        </div>
+  /* Portfolio summary (big card) */
+  .portfolio-card {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    border-radius: 28px;
+    padding: 18px;
+  }
 
+  .portfolio-card h5 {
+    margin: 0;
+    color: #bdbdbd;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
 
-    </div>
+  .portfolio-value {
+    font-size: 2.25rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: #FFF27A; /* neon-ish highlight */
+  }
 
-    <!-- Right Sidebar -->
-    <div class="col-lg-4 col-md-12">
-        <div class="card mb-3" style="background-color: #1e1e1e; border: none; border-radius: 15px; padding: 15px; color: #ffffff;">
-            <h5 class="text-center" style="color: #fff; margin-bottom: 15px;">Information</h5>
-            <div style="background: linear-gradient(135deg, #9b8ff5, #7d6be8); padding: 20px; border-radius: 12px; color: white;">
-                <p style="margin: 0; font-weight: bold;">{{ session.get('user_name') }}</p>
-                <p style="margin: 2px 0 10px 0;">{{ user_email }}</p>
-                <small style="opacity: 0.8;">Joined On {{ joined_on }}</small>
-            </div>
+  .portfolio-sub {
+    display:flex;
+    gap: 12px;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap:wrap;
+  }
 
-            <h6 style="margin-top: 20px; color: #bbb;">My Stocks</h6>
+  .sub-block {
+    flex: 1;
+    min-width: 120px;
+    text-align: center;
+  }
+
+  .sub-block h6 {
+    margin: 0;
+    color: #bdbdbd;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .sub-block p {
+    margin: 4px 0 0 0;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: #fff;
+  }
+
+  /* Chart card */
+  .chart-card {
+    border-radius: 28px;
+    padding: 18px;
+  }
+
+  .chart-title {
+    display:flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .chart-title h5 {
+    margin: 0;
+    color: #bdbdbd;
+    font-size: 0.95rem;
+  }
+
+  /* asset card (donut) */
+  .asset-card {
+    max-width: 420px;
+    margin-top: 22px;
+    padding: 18px;
+    text-align:center;
+  }
+
+  .asset-card h5 { margin-bottom: 10px; color: #fff; }
+
+  /* Stock Trend Card Styles */
+  .trend-card {
+    padding: 20px;
+  }
+
+  .trend-card h5 {
+    margin: 0 0 16px 0;
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+
+  .trend-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 14px;
+  }
+
+  .trend-mini-card {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    border-radius: 14px;
+    padding: 12px;
+    transition: all 0.3s ease;
+  }
+
+  .trend-mini-card:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 242, 122, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+
+  .trend-mini-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .trend-mini-ticker {
+    font-weight: 700;
+    font-size: 1rem;
+    color: #fff;
+    letter-spacing: 0.5px;
+  }
+
+  .trend-mini-change {
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  .trend-mini-change.positive {
+    color: #00ff7f;
+  }
+
+  .trend-mini-change.negative {
+    color: #ff4d4d;
+  }
+
+  .trend-chart-container {
+    height: 60px;
+    position: relative;
+  }
+
+  .trend-empty {
+    text-align: center;
+    padding: 2rem;
+    color: #999;
+  }
+
+  .trend-empty-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+  }
+
+  /* info panel right */
+  .info-panel .user-gradient {
+    padding: 18px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #9b8ff5 0%, #7d6be8 100%);
+    color: #fff;
+    text-align: left;
+  }
+  .info-panel .user-gradient p { margin: 0; font-weight: 700; }
+  .info-panel .user-gradient small { opacity: 0.9; display:block; margin-top:6px; }
+
+  .stocks-list {
+    margin-top: 14px;
+    border-radius: 12px;
+    padding: 10px;
+    background: rgba(255,255,255,0.02);
+  }
+
+  .stock-item {
+    display:flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 6px;
+    border-bottom: 1px solid rgba(255,255,255,0.02);
+  }
+
+  .stock-left {
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+
+  .stock-dot {
+    width:12px;height:12px;border-radius:50%;
+    background: linear-gradient(180deg,#6f6af6,#3edc9a);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+  }
+
+  .stock-ticker { font-weight:700; color:#fff; }
+
+  .stock-price { font-weight:600; color:#00ff7f; }
+
+  /* Responsive tweaks */
+  @media (max-width: 992px) {
+    .dash-main { flex-basis: 100%; }
+    .dash-side { flex-basis: 100%; }
+    .asset-card { margin-left: auto; margin-right: auto; }
+  }
+
+  @media (max-width: 768px) {
+    .trend-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<div class="dashboard-wrap">
+  <div class="dash-row">
+    <div class="dash-main">
+      <div style="display:flex; gap:20px; flex-wrap:wrap;">
+        <!-- Portfolio Card -->
+        <div class="card-dash portfolio-card" style="flex:1; min-width:260px; max-width:560px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
             <div>
-                {% for holding in holdings %}
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #333;">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <div style="width: 12px; height: 12px; background-color: gray; border-radius: 50%;"></div>
-                        <span>{{ holding.ticker }}</span>
-                    </div>
-                    <span style="color: #00ff7f;">${{ holding.current_price | round(2) }}</span>
-                </div>
-                {% endfor %}
+              <h5>Portfolio Value</h5>
+              <div class="portfolio-value">${{ total_portfolio_value }}</div>
             </div>
+            <div style="text-align:right;">
+              <!-- small stat pill -->
+              <div style="background: rgba(255,255,255,0.03); padding:8px 12px; border-radius:12px; font-size:0.85rem;">
+                Updated: {{ portfolio_history_dates[-1] if portfolio_history_dates else "" }}
+              </div>
+            </div>
+          </div>
+
+          <div class="portfolio-sub" style="margin-top:10px;">
+            <div class="sub-block">
+              <h6>Invested</h6>
+              <p>${{ total_invested }}</p>
+            </div>
+            <div class="sub-block">
+              <h6>Cash</h6>
+              <p>${{ cash_balance }}</p>
+            </div>
+            <div class="sub-block">
+              <h6>Holdings</h6>
+              <p>${{ (total_portfolio_value - cash_balance) | default('0.00') }}</p>
+            </div>
+          </div>
         </div>
+
+        <!-- Portfolio History (Bar Chart) -->
+        <div class="card-dash chart-card" style="flex:1; min-width:320px; max-width:640px;">
+          <div class="chart-title">
+            <h5>Portfolio History</h5>
+            <div style="font-size:0.85rem; color:#bdbdbd;">Last {{ portfolio_history_dates | length }} entries</div>
+          </div>
+          <canvas id="portfolioChart" height="180" style="max-height:220px;"></canvas>
+        </div>
+      </div>
+
+      <!-- Asset Allocation (Donut) & Stock Trends -->
+      <div style="display:flex; gap:20px; flex-wrap:wrap; margin-top:14px;">
+        <!-- Asset Allocation (Donut) -->
+        <div class="card-dash asset-card" style="flex:1; min-width:300px;">
+          <h5>Asset Allocation</h5>
+          <canvas id="assetChart" height="200" style="max-height:260px;"></canvas>
+          <div id="asset-legend" style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap; justify-content:center;"></div>
+        </div>
+
+        <!-- Stock Trend Card -->
+        <div class="card-dash trend-card" style="flex:1; min-width:300px;">
+          <h5> Stock Trends (Last 7 Days)</h5>
+          <div id="trendCharts" class="trend-grid"></div>
+        </div>
+      </div>
+
     </div>
+
+    <!-- Right info column (keeps top/side untouched) -->
+    <div class="dash-side">
+      <div class="card-dash info-panel">
+        <h5 style="margin-top:0; color:#bdbdbd; text-align:center;">Information</h5>
+        <div class="user-gradient">
+          <p>{{ session.get('user_name') }}</p>
+          <p style="font-weight:500; margin-top:6px;">{{ user_email }}</p>
+          <small>Joined On {{ joined_on }}</small>
+        </div>
+
+        <h6 style="margin-top:18px; color:#bdbdbd;">My Stocks</h6>
+        <div class="stocks-list">
+          {% if holdings %}
+            {% for holding in holdings %}
+              <div class="stock-item">
+                <div class="stock-left">
+                  <div class="stock-dot" aria-hidden="true"></div>
+                  <div>
+                    <div class="stock-ticker">{{ holding.ticker }}</div>
+                    <div style="font-size:0.8rem; color:#bdbdbd;">Qty: {{ holding.quantity }}</div>
+                  </div>
+                </div>
+                <div style="text-align:right;">
+                  <div class="stock-price">${{ ('%.2f' % holding.current_price) if holding.current_price is not none else '0.00' }}</div>
+                </div>
+              </div>
+            {% endfor %}
+          {% else %}
+            <div style="padding:12px; color:#bdbdbd;">No holdings yet.</div>
+          {% endif %}
+        </div>
+
+      </div>
+    </div>
+  </div>
 </div>
 
-<!-- ---------------- Chart.js Script ---------------- -->
+<!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // Portfolio Line Chart
+  // --- Data from server (as native JS arrays) ---
+  const portfolioDates = JSON.parse(`{{ portfolio_history_dates | tojson | safe }}`);
+  const portfolioValues = JSON.parse(`{{ portfolio_history_values | tojson | safe }}`);
+
+  const assetLabels = JSON.parse(`{{ asset_labels | tojson | safe }}`);
+  const assetValues = JSON.parse(`{{ asset_values | tojson | safe }}`);
+
+  // Utility: format number as currency with commas
+  function formatCurrency(n) {
+    if (n === null || n === undefined) return '$0.00';
+    return '$' + Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  // ---------------- Portfolio Bar Chart ----------------
+  (function(){
     const ctx = document.getElementById('portfolioChart').getContext('2d');
-    const portfolioDates = JSON.parse('{{ portfolio_history_dates | tojson | safe }}');
-    const portfolioValues = JSON.parse('{{ portfolio_history_values | tojson | safe }}');
+
+    // highlight the max point (optional) - compute index of max value
+    let maxIndex = null;
+    if (portfolioValues.length) {
+      let max = Math.max(...portfolioValues);
+      maxIndex = portfolioValues.indexOf(max);
+    }
+
+    const barColors = portfolioValues.map((v, idx) => {
+      // highlight the max bar
+      if (idx === maxIndex) return 'rgba(255, 196, 0, 0.95)';
+      return 'rgba(125,107,232,0.9)'; // subtle purple
+    });
 
     new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: portfolioDates,
+        datasets: [{
+          label: 'Portfolio Value',
+          data: portfolioValues,
+          backgroundColor: barColors,
+          borderRadius: 8,
+          maxBarThickness: 28,
+          borderSkipped: false
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display:false },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const val = context.parsed.y;
+                return formatCurrency(val);
+              }
+            },
+            backgroundColor: '#111',
+            titleColor: '#fff',
+            bodyColor: '#fff',
+            borderColor: 'rgba(255,255,255,0.03)',
+            borderWidth: 1
+          }
+        },
+        scales: {
+          x: {
+            ticks: { color: '#dcdcdc' },
+            grid: { display: false }
+          },
+          y: {
+            ticks: {
+              color: '#dcdcdc',
+              callback: function(value) { return '$' + value.toLocaleString(); }
+            },
+            grid: { color: 'rgba(255,255,255,0.03)' }
+          }
+        }
+      }
+    });
+  })();
+
+  // ---------------- Asset Allocation Donut Chart ----------------
+  (function(){
+    const ctx = document.getElementById('assetChart').getContext('2d');
+
+    // Provide fallback if no assets - a placeholder single grey slice
+    const labels = assetLabels && assetLabels.length ? assetLabels : ['No Data'];
+    const values = assetValues && assetValues.length ? assetValues : [1];
+
+    const colors = ['#7d6be8','#00ff7f','#ffcc00','#ff4d4d','#1e90ff','#8a56ff','#ffd27a'];
+
+    const bgColors = labels.map((_,i) => colors[i % colors.length]);
+
+    const assetChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: labels,
+        datasets: [{
+          data: values,
+          backgroundColor: bgColors,
+          borderWidth: 0
+        }]
+      },
+      options: {
+        cutout: '62%',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(ctx) {
+                const label = ctx.label || '';
+                const val = ctx.parsed;
+                // compute percent
+                const sum = ctx.dataset.data.reduce((a,b) => a + b, 0);
+                const pct = sum ? (val / sum * 100).toFixed(1) : '0.0';
+                return `${label}: ${formatCurrency(val)} (${pct}%)`;
+              }
+            },
+            backgroundColor: '#111',
+            titleColor: '#fff',
+            bodyColor: '#fff'
+          }
+        }
+      }
+    });
+
+    // Build simple legend under chart
+    const legendContainer = document.getElementById('asset-legend');
+    legendContainer.innerHTML = '';
+    labels.forEach((lab, i) => {
+      const item = document.createElement('div');
+      item.style.display = 'flex';
+      item.style.alignItems = 'center';
+      item.style.gap = '8px';
+      item.style.fontSize = '0.9rem';
+      item.style.color = '#e6e6e6';
+      item.style.minWidth = '120px';
+
+      const swatch = document.createElement('span');
+      swatch.style.width = '12px';
+      swatch.style.height = '12px';
+      swatch.style.borderRadius = '50%';
+      swatch.style.background = bgColors[i];
+      swatch.style.display = 'inline-block';
+      swatch.style.boxShadow = '0 2px 6px rgba(0,0,0,0.4)';
+
+      const text = document.createElement('span');
+      text.textContent = lab;
+
+      const val = document.createElement('span');
+      val.style.marginLeft = '8px';
+      val.style.fontWeight = '700';
+      val.style.color = '#fff';
+      const v = values[i] || 0;
+      val.textContent = formatCurrency(v);
+
+      item.appendChild(swatch);
+      item.appendChild(text);
+      item.appendChild(val);
+
+      legendContainer.appendChild(item);
+    });
+
+  })();
+
+  // ---------------- Stock Trend Mini Charts ----------------
+  (function(){
+    const stockTrends = JSON.parse(`{{ stock_trends | tojson | safe }}`);
+    const container = document.getElementById("trendCharts");
+
+    if (Object.keys(stockTrends).length === 0) {
+      container.innerHTML = `
+        <div class="trend-empty" style="grid-column: 1 / -1;">
+          <div class="trend-empty-icon">📊</div>
+          <div style="color: #d0d0d0; font-weight: 600;">No trend data available</div>
+          <div style="font-size: 0.9rem; margin-top: 0.5rem;">Add stocks to see their trends</div>
+        </div>
+      `;
+      return;
+    }
+
+    Object.entries(stockTrends).forEach(([ticker, data]) => {
+      const startPrice = data.prices[0];
+      const endPrice = data.prices[data.prices.length - 1];
+      const priceChange = endPrice - startPrice;
+      const pctChange = ((priceChange / startPrice) * 100).toFixed(1);
+      const isPositive = priceChange >= 0;
+      const color = isPositive ? '#00ff7f' : '#ff4d4d';
+
+      const miniCard = document.createElement("div");
+      miniCard.className = "trend-mini-card";
+      miniCard.innerHTML = `
+        <div class="trend-mini-header">
+          <span class="trend-mini-ticker">${ticker}</span>
+          <span class="trend-mini-change ${isPositive ? 'positive' : 'negative'}">
+            ${isPositive ? '+' : ''}${pctChange}%
+          </span>
+        </div>
+        <div class="trend-chart-container">
+          <canvas id="chart-${ticker}"></canvas>
+        </div>
+      `;
+      container.appendChild(miniCard);
+
+      const ctx = document.getElementById(`chart-${ticker}`).getContext("2d");
+      new Chart(ctx, {
         type: 'line',
         data: {
-            labels: portfolioDates,
-            datasets: [{
-                label: 'Portfolio Value',
-                data: portfolioValues,
-                borderColor: '#00ff7f',
-                backgroundColor: 'rgba(0, 255, 127, 0.2)',
-                tension: 0.2,
-                fill: true,
-                pointRadius: 3,
-                pointHoverRadius: 6
-            }]
+          labels: data.dates,
+          datasets: [{
+            data: data.prices,
+            borderColor: color,
+            borderWidth: 2,
+            fill: false,
+            tension: 0.4,
+            pointRadius: 0,
+            pointHoverRadius: 3,
+            pointHoverBackgroundColor: color,
+            pointHoverBorderColor: '#fff',
+            pointHoverBorderWidth: 2
+          }]
         },
         options: {
-            responsive: true,
-            scales: {
-                x: { ticks: { color: '#fff' }, grid: { color: '#333' } },
-                y: { ticks: { color: '#fff' }, grid: { color: '#333' } }
-            },
-            plugins: { legend: { labels: { color: '#fff' } } }
-        }
-    });
-
-    // Asset Allocation Pie Chart
-    const assetCtx = document.getElementById('assetChart').getContext('2d');
-    const assetLabels = JSON.parse('{{ asset_labels | tojson | safe }}');
-    const assetValues = JSON.parse('{{ asset_values | tojson | safe }}');
-
-    new Chart(assetCtx, {
-        type: 'pie',
-        data: {
-            labels: assetLabels,
-            datasets: [{
-                data: assetValues,
-                backgroundColor: ['#7d6be8', '#00ff7f', '#ffcc00', '#ff4d4d', '#1e90ff'],
-                borderWidth: 1
-            }]
-        },
-        options: {
-            plugins: {
-                legend: { labels: { color: '#fff', font: { size: 12 } } }
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { 
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#111',
+              titleColor: '#fff',
+              bodyColor: '#fff',
+              borderColor: 'rgba(255,255,255,0.1)',
+              borderWidth: 1,
+              callbacks: {
+                label: function(context) {
+                  return formatCurrency(context.parsed.y);
+                }
+              }
             }
+          },
+          interaction: {
+            intersect: false,
+            mode: 'index'
+          },
+          scales: {
+            x: { display: false },
+            y: { display: false }
+          }
         }
+      });
     });
-</script>
+  })();
 
+</script>
 {% endblock %}

@@ -112,23 +112,38 @@ def profile():
 
         asset_labels = list(sector_map.keys())
         asset_values = [float(v) for v in sector_map.values()]
+    
+    # --- Weekly trend data for each holding ---
+        stock_trends = {}
+        for h in holdings:
+            try:
+                stock = yf.Ticker(h.ticker)
+                hist = stock.history(period="7d")["Close"]
+                stock_trends[h.ticker] = {
+                    "dates": [d.strftime("%m/%d") for d in hist.index],
+                    "prices": [float(p) for p in hist.values]
+                }
+            except Exception as e:
+                print(f"Error fetching trend for {h.ticker}: {e}")
+
 
     # --- Render ---
     return render_template(
-        "profile.html",
-        name=user.name,
-        joined_on=joined_on,
-        user_email=user_email,
-        cash_balance=cash_balance,
-        total_invested=total_invested,
-        holdings=holdings_list,
-        total_portfolio_value=total_portfolio_value,
-        portfolio_history_dates=portfolio_history_dates,
-        portfolio_history_values=portfolio_history_values,
-        asset_labels=asset_labels,            # ✅ added
-        asset_values=asset_values,            # ✅ added
-        additional_info=None
-    )
+    "profile.html",
+    name=user.name,
+    joined_on=joined_on,
+    user_email=user_email,
+    cash_balance=cash_balance,
+    total_invested=total_invested,
+    holdings=holdings_list,
+    total_portfolio_value=total_portfolio_value,
+    portfolio_history_dates=portfolio_history_dates,
+    portfolio_history_values=portfolio_history_values,
+    asset_labels=asset_labels,
+    asset_values=asset_values,
+    stock_trends=stock_trends
+)
+
 
 
 # ----------------- Buy/Sell/Update Route -----------------
@@ -139,21 +154,65 @@ def update_holding():
     if not user_id:
         return redirect(url_for("auth.login_page"))
 
-    ticker = request.form.get("ticker")
+    ticker = request.form.get("ticker").upper()
     quantity = int(request.form.get("quantity"))
     action = request.form.get("action")  # "buy" or "sell"
+
+    portfolio = Portfolio.query.filter_by(user_id=user_id).first()
+    if not portfolio:
+        # Create portfolio if it doesn't exist
+        portfolio = Portfolio(user_id=user_id, cash_balance=0, total_invested=0)
+        db.session.add(portfolio)
+        db.session.commit()
+
+    # Fetch current stock price
+    try:
+        stock_price = Decimal(str(yf.Ticker(ticker).history(period="1d")['Close'][-1])).quantize(Decimal('0.01'))
+    except Exception as e:
+        print(f"Error fetching {ticker}: {e}")
+        return redirect(url_for("profile.profile"))
 
     holding = Holding.query.filter_by(user_id=user_id, ticker=ticker).first()
 
     if action == "buy":
+        total_cost = stock_price * quantity
+
+        if portfolio.cash_balance < total_cost:
+            # Not enough cash
+            print("Insufficient funds")
+            return redirect(url_for("profile.profile"))
+
+        # Deduct cash
+        portfolio.cash_balance -= total_cost
+        portfolio.total_invested += total_cost
+
         if holding:
-            holding.quantity += quantity
+            # Update average purchase price
+            old_total_cost = holding.purchase_price * holding.quantity
+            new_quantity = holding.quantity + quantity
+            holding.purchase_price = (old_total_cost + total_cost) / new_quantity
+            holding.quantity = new_quantity
         else:
-            holding = Holding(user_id=user_id, ticker=ticker, quantity=quantity, purchase_price=0)
+            holding = Holding(
+                user_id=user_id,
+                ticker=ticker,
+                quantity=quantity,
+                purchase_price=stock_price
+            )
             db.session.add(holding)
-    elif action == "sell" and holding:
+
+    elif action == "sell":
+        if not holding or holding.quantity < quantity:
+            # Cannot sell more than you own
+            print("Insufficient shares to sell")
+            return redirect(url_for("profile.profile"))
+
+        total_proceeds = stock_price * quantity
+        portfolio.cash_balance += total_proceeds
+        portfolio.total_invested -= holding.purchase_price * quantity
+
         holding.quantity -= quantity
-        if holding.quantity <= 0:
+        if holding.quantity == 0:
             db.session.delete(holding)
 
     db.session.commit()

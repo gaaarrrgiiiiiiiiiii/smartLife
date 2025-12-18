@@ -1,0 +1,318 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+    .thresholds-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+    }
+
+    .page-title {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 2.5rem;
+        border-radius: 20px;
+        margin-bottom: 3rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        text-align: center;
+    }
+
+    .page-title h1 {
+        color: #ffffff;
+        font-weight: 700;
+        margin: 0;
+        font-size: 2.5rem;
+    }
+
+    .page-title p {
+        color: #f0f0f0;
+        margin: 0.5rem 0 0 0;
+        font-size: 1.1rem;
+    }
+
+    .section-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        padding-left: 0.5rem;
+    }
+
+    .section-header h2 {
+        color: #FFF27A;
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin: 0;
+    }
+
+    .section-badge {
+        background: rgba(255, 242, 122, 0.2);
+        color: #FFF27A;
+        padding: 0.35rem 0.9rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+
+    .section-badge.disabled {
+        background: rgba(150, 150, 150, 0.2);
+        color: #999;
+    }
+
+    .section {
+        margin-bottom: 3rem;
+    }
+
+    .cards-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1.25rem;
+    }
+
+    .threshold-card {
+        background: linear-gradient(180deg, rgba(30,30,30,0.95), rgba(20,20,20,0.95));
+        border-radius: 20px;
+        padding: 1.75rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        border: 1px solid rgba(255,255,255,0.03);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .threshold-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: linear-gradient(180deg, #FFF27A, #FFD700);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .threshold-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+        border-color: rgba(255, 242, 122, 0.1);
+    }
+
+    .threshold-card:hover::before {
+        opacity: 1;
+    }
+
+    .threshold-card.disabled::before {
+        background: linear-gradient(180deg, #999, #666);
+    }
+
+    .ticker-name {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: #FFF27A;
+        letter-spacing: 1px;
+    }
+
+    .threshold-value {
+        color: #d0d0d0;
+        font-size: 1.1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .threshold-value .label {
+        color: #999;
+        font-size: 0.9rem;
+    }
+
+    .threshold-value .value {
+        color: #FFF27A;
+        font-weight: 600;
+        font-size: 1.2rem;
+    }
+
+    .threshold-value.not-set .value {
+        color: #999;
+        font-style: italic;
+    }
+
+    .card-button {
+        background: linear-gradient(135deg, #FFF27A 0%, #FFD700 100%);
+        color: #1a1a1a;
+        border: none;
+        border-radius: 12px;
+        padding: 0.85rem 1.5rem;
+        font-size: 1rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(255, 242, 122, 0.3);
+        text-decoration: none;
+        display: block;
+        text-align: center;
+        margin-top: 0.5rem;
+    }
+
+    .card-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(255, 242, 122, 0.4);
+        text-decoration: none;
+        color: #1a1a1a;
+    }
+
+    .card-button:active {
+        transform: translateY(0);
+    }
+
+    .card-button.secondary {
+        background: rgba(255, 255, 255, 0.08);
+        color: #d0d0d0;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    .card-button.secondary:hover {
+        background: rgba(255, 255, 255, 0.12);
+        color: #ffffff;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem 2rem;
+        background: linear-gradient(180deg, rgba(30,30,30,0.95), rgba(20,20,20,0.95));
+        border: 1px solid rgba(255,255,255,0.03);
+        border-radius: 20px;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+    }
+
+    .empty-state-icon {
+        font-size: 3.5rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    .empty-state h4 {
+        color: #d0d0d0;
+        margin: 0;
+        font-size: 1.25rem;
+    }
+
+    .empty-state p {
+        color: #999;
+        margin: 0.5rem 0 0 0;
+        font-size: 1rem;
+    }
+
+    .status-indicator {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 0.5rem;
+    }
+
+    .status-indicator.active {
+        background: #4ade80;
+        box-shadow: 0 0 10px rgba(74, 222, 128, 0.5);
+    }
+
+    .status-indicator.inactive {
+        background: #999;
+    }
+
+    @media (max-width: 768px) {
+        .thresholds-container {
+            padding: 1rem;
+        }
+
+        .page-title h1 {
+            font-size: 2rem;
+        }
+
+        .cards-container {
+            grid-template-columns: 1fr;
+        }
+
+        .section-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+    }
+</style>
+
+<div class="thresholds-container">
+    <!-- Page Title -->
+    <div class="page-title">
+        <h1>Stock Thresholds</h1>
+        <p>Manage price alerts for your watched stocks</p>
+    </div>
+
+    <!-- Enabled Thresholds Section -->
+    <div class="section">
+        <div class="section-header">
+            <span class="status-indicator active"></span>
+            <h2>Active Thresholds</h2>
+            <span class="section-badge">{{ thresholds_enabled|length }}</span>
+        </div>
+        
+        <div class="cards-container">
+            {% for t in thresholds_enabled %}
+                <div class="threshold-card">
+                    <div class="ticker-name">{{ t.ticker }}</div>
+                    <div class="threshold-value">
+                        <span class="label">Alert Price:</span>
+                        <span class="value">${{ '%.2f' % t.min_price }}</span>
+                    </div>
+                    <a href="{{ url_for('threshold.update_threshold_page', ticker=t.ticker) }}">
+                        <button class="card-button"> Update Threshold</button>
+                    </a>
+                </div>
+            {% endfor %}
+            
+            {% if thresholds_enabled|length == 0 %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">🔔</div>
+                    <h4>No Active Thresholds</h4>
+                    <p>Set up price alerts to get notified about stock movements</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Disabled Thresholds Section -->
+    <div class="section">
+        <div class="section-header">
+            <span class="status-indicator inactive"></span>
+            <h2>Inactive Thresholds</h2>
+            <span class="section-badge disabled">{{ thresholds_disabled|length }}</span>
+        </div>
+        
+        <div class="cards-container">
+            {% for t in thresholds_disabled %}
+                <div class="threshold-card disabled">
+                    <div class="ticker-name">{{ t.ticker }}</div>
+                    <div class="threshold-value not-set">
+                        <span class="label">Alert Price:</span>
+                        <span class="value">Not set</span>
+                    </div>
+                    <a href="{{ url_for('threshold.update_threshold_page', ticker=t.ticker) }}">
+                        <button class="card-button secondary">⚙️ Set Threshold</button>
+                    </a>
+                </div>
+            {% endfor %}
+            
+            {% if thresholds_disabled|length == 0 %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">✅</div>
+                    <h4>All Thresholds Are Set</h4>
+                    <p>Great job! All your stocks have active price alerts</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

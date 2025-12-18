@@ -1,92 +1,414 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Login</title>
+    <title>Login / Sign Up / Admin</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
-            background-color: #1a1a1a;
+            background: linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%);
             color: #ffd700;
             font-family: 'Inter', sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
+            padding: 20px;
+            margin: 0;
         }
 
-        .login-card {
-            background-color: #2d2d2d;
-            padding: 40px 30px;
-            border-radius: 12px;
-            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+        .auth-container {
+            position: relative;
             width: 100%;
-            max-width: 400px;
+            max-width: 500px;
+            min-height: 550px;
+        }
+
+        .card-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        .auth-card {
+            position: absolute;
+            width: 100%;
+            top: 0;
+            left: 0;
+            background: linear-gradient(180deg, rgba(45, 45, 45, 0.95), rgba(35, 35, 35, 0.95));
+            padding: 40px 35px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            opacity: 0;
+            visibility: hidden;
+            transform: scale(0.9) rotateY(90deg);
+            transition: all 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+
+        .auth-card.active {
+            opacity: 1;
+            visibility: visible;
+            transform: scale(1) rotateY(0deg);
+        }
+
+        .auth-card h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
             text-align: center;
         }
 
-        .login-card input {
-            background-color: #1a1a1a;
-            color: #ffd700;
-            border: 1px solid #ffd700;
-            border-radius: 8px;
-            padding: 10px 15px;
-            width: 100%;
-            margin-bottom: 15px;
+        .auth-card .subtitle {
+            color: #999;
+            margin-bottom: 25px;
+            font-size: 0.9rem;
+            text-align: center;
         }
 
-        .login-card input::placeholder {
-            color: #ffd700;
-            opacity: 0.7;
+        .form-group {
+            margin-bottom: 16px;
         }
 
-        .login-card button {
-            background-color: #ffd700;
-            color: #1a1a1a;
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
             font-weight: 600;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            width: 100%;
-            transition: background 0.3s;
-        }
-
-        .login-card button:hover {
-            background-color: #e6c200;
-        }
-
-        a {
+            font-size: 0.85rem;
             color: #ffd700;
+        }
+
+        .auth-card input {
+            background-color: rgba(26, 26, 26, 0.8);
+            color: #ffd700;
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            border-radius: 12px;
+            padding: 12px 16px;
+            width: 100%;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+        }
+
+        .auth-card input:focus {
+            outline: none;
+            border-color: #ffd700;
+            background-color: rgba(26, 26, 26, 0.95);
+            box-shadow: 0 0 0 4px rgba(255, 215, 0, 0.1);
+        }
+
+        .auth-card input::placeholder {
+            color: #888;
+            opacity: 0.8;
+        }
+
+        .auth-card button {
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            color: #1a1a1a;
+            font-weight: 700;
+            border: none;
+            padding: 13px 20px;
+            border-radius: 12px;
+            width: 100%;
+            transition: all 0.3s ease;
+            margin-top: 8px;
+            font-size: 1rem;
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+            cursor: pointer;
+        }
+
+        .auth-card button:hover {
+            background: linear-gradient(135deg, #ffed4e, #ffd700);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4);
+        }
+
+        .toggle-text {
+            margin-top: 20px;
+            color: #999;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        .toggle-link {
+            color: #ffd700;
+            text-decoration: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .toggle-link:hover {
+            color: #ffed4e;
             text-decoration: underline;
         }
 
-        a:hover {
-            color: #e6c200;
+        .error-message {
+            background: rgba(255, 68, 68, 0.15);
+            border: 1px solid rgba(255, 68, 68, 0.3);
+            color: #ff4444;
+            padding: 10px 14px;
+            border-radius: 10px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
         }
 
-        .error-message {
-            color: #ff4444;
-            margin-bottom: 15px;
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+            color: #666;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(255, 215, 0, 0.2);
+        }
+
+        .divider span {
+            padding: 0 15px;
+            font-size: 0.8rem;
+        }
+
+        @media (max-width: 576px) {
+            .auth-card {
+                padding: 30px 25px;
+            }
+            .auth-card h2 {
+                font-size: 1.75rem;
+            }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .bg-decoration {
+            position: fixed;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 215, 0, 0.1), transparent);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .bg-decoration-1 {
+            width: 400px;
+            height: 400px;
+            top: -100px;
+            right: -100px;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .bg-decoration-2 {
+            width: 300px;
+            height: 300px;
+            bottom: -80px;
+            left: -80px;
+            animation: float 8s ease-in-out infinite;
+            animation-delay: 1s;
         }
     </style>
 </head>
 <body>
-    <div class="login-card">
-        <h2 class="mb-4">Login</h2>
+    <!-- Background decorations -->
+    <div class="bg-decoration bg-decoration-1"></div>
+    <div class="bg-decoration bg-decoration-2"></div>
 
-        {% if error %}
-            <p class="error-message">{{ error }}</p>
-        {% endif %}
+    <div class="auth-container">
+        <div class="card-wrapper">
+            <!-- Login Card -->
+            <div class="auth-card active" id="loginCard">
+                <h2>Welcome Back</h2>
+                <p class="subtitle">Sign in to continue to your account</p>
 
-        <form method="POST" action="{{ url_for('auth.login') }}">
-            <input type="email" name="email" placeholder="Email" required />
-            <input type="password" name="password" placeholder="Password" required />
-            <button type="submit">Login</button>
-        </form>
+                <div id="loginError" style="display:none;" class="error-message">
+                    <span>⚠️</span>
+                    <span id="loginErrorText"></span>
+                </div>
 
-        <p class="mt-3">Don't have an account? <a href="{{ url_for('auth.signup_page') }}">Sign Up</a></p>
+                <form method="POST" action="/login" id="loginForm">
+                    <div class="form-group">
+                        <label for="loginEmail">Email Address</label>
+                        <input type="email" id="loginEmail" name="email" placeholder="Enter your email" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">Password</label>
+                        <input type="password" id="loginPassword" name="password" placeholder="Enter your password" required />
+                    </div>
+                    <button type="submit">Sign In</button>
+                </form>
+
+                <p class="toggle-text">
+                    Are you an admin? <a class="toggle-link" onclick="showCard('admin')">Sign in as Admin</a>
+                </p>
+
+                <div class="divider"><span>OR</span></div>
+
+                <p class="toggle-text">
+                    <a class="toggle-link" onclick="showCard('forgot')">Forgot your password?</a>
+                </p>
+
+
+                <p class="toggle-text">
+                    Don't have an account? 
+                    <a class="toggle-link" onclick="showCard('signup')">Create Account</a>
+                </p>
+            </div>
+
+            <!-- Signup Card -->
+            <div class="auth-card" id="signupCard">
+                <h2>Create Account</h2>
+                <p class="subtitle">Join us and start your journey</p>
+
+                <div id="signupError" style="display:none;" class="error-message">
+                    <span>⚠️</span>
+                    <span id="signupErrorText"></span>
+                </div>
+
+                <form method="POST" action="/signup" id="signupForm">
+                    <div class="form-group">
+                        <label for="signupName">Full Name</label>
+                        <input type="text" id="signupName" name="name" placeholder="Enter your full name" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="signupEmail">Email Address</label>
+                        <input type="email" id="signupEmail" name="email" placeholder="Enter your email" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="signupPassword">Password</label>
+                        <input type="password" id="signupPassword" name="password" placeholder="Create a password" required />
+                    </div>
+                    <button type="submit">Create Account</button>
+                </form>
+
+                <div class="divider"><span>OR</span></div>
+
+                <p class="toggle-text">
+                    Already have an account? 
+                    <a class="toggle-link" onclick="showCard('login')">Sign In</a>
+                </p>
+            </div>
+
+            <!-- Forgot Password Card -->
+    <div class="auth-card" id="forgotCard">
+        <h2>Reset Password</h2>
+        <p class="subtitle">Enter your email to receive a reset link</p>
+
+        <div id="forgotError" style="display:none;" class="error-message">
+            <span>⚠️</span>
+            <span id="forgotErrorText"></span>
+        </div>
+
+            <form method="POST" action="/forgot-password" id="forgotForm">
+                <div class="form-group">
+                    <label for="forgotEmail">Email Address</label>
+                    <input type="email" id="forgotEmail" name="email" placeholder="Enter your email" required />
+                </div>
+                <button type="submit">Send Reset Link</button>
+            </form>
+
+            <div class="divider"><span>OR</span></div>
+
+            <p class="toggle-text">
+                Remember your password? 
+                <a class="toggle-link" onclick="showCard('login')">Back to Login</a>
+            </p>
+        </div>
+
+
+            <!-- Admin Login Card -->
+            <div class="auth-card" id="adminCard">
+                <h2>Admin Access</h2>
+                <p class="subtitle">Sign in to the admin dashboard</p>
+
+                <div id="adminError" style="display:none;" class="error-message">
+                    <span>⚠️</span>
+                    <span id="adminErrorText"></span>
+                </div>
+
+                <form method="POST" action="/admin-login" id="adminLoginForm">
+                    <div class="form-group">
+                        <label for="adminEmail">Admin Email</label>
+                        <input type="email" id="adminEmail" name="email" placeholder="Enter admin email" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="adminPassword">Password</label>
+                        <input type="password" id="adminPassword" name="password" placeholder="Enter admin password" required />
+                    </div>
+                    <button type="submit">Sign In as Admin</button>
+                </form>
+
+                <div class="divider"><span>OR</span></div>
+
+                <p class="toggle-text">
+                    Go back to 
+                    <a class="toggle-link" onclick="showCard('login')">User Login</a>
+                </p>
+            </div>
+        </div>
     </div>
+
+    <script>
+        function showCard(mode) {
+            // Remove active class from all cards
+            document.querySelectorAll('.auth-card').forEach(card => {
+                card.classList.remove('active');
+            });
+
+            // Add active class to the selected card
+            const cardMap = {
+                'login': 'loginCard',
+                'signup': 'signupCard',
+                'admin': 'adminCard',
+                'forgot': 'forgotCard'
+            };
+
+            const targetCard = document.getElementById(cardMap[mode]);
+            if (targetCard) {
+                targetCard.classList.add('active');
+            }
+        }
+
+        // Check URL param ?mode=signup or ?mode=admin
+        const urlParams = new URLSearchParams(window.location.search);
+        const mode = urlParams.get('mode');
+        if (mode) {
+            showCard(mode);
+        }
+
+        // Handle errors from server
+        // In your Flask template, you would render this variable
+        const loginError = ''; // {{ error if error else "" }}
+        const path = window.location.pathname;
+        
+        if (loginError) {
+            if (path.includes('signup')) {
+                document.getElementById('signupError').style.display = 'flex';
+                document.getElementById('signupErrorText').textContent = loginError;
+                showCard('signup');
+            } else if (path.includes('admin')) {
+                document.getElementById('adminError').style.display = 'flex';
+                document.getElementById('adminErrorText').textContent = loginError;
+                showCard('admin');
+            } else {
+                document.getElementById('loginError').style.display = 'flex';
+                document.getElementById('loginErrorText').textContent = loginError;
+                showCard('login');
+            }
+        }
+    </script>
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

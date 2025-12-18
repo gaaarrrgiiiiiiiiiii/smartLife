@@ -9,7 +9,10 @@ class User(db.Model):
     email = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
     created_at = db.Column(db.DateTime, default=db.func.now())
-    
+    fallback_strategy = db.Column(db.String(50), default="hold_cash")  # "hold_cash", "switch_best", "switch_safe"
+    fallback_asset = db.Column(db.String(20), nullable=True)
+    blocked = db.Column(db.Boolean, nullable=False, default=False)
+
     # Relationships will be added implicitly via backrefs from other models
 
 class Portfolio(db.Model):
@@ -80,3 +83,28 @@ class PortfolioHistory(db.Model):
 
     def __repr__(self):
         return f"<History User:{self.user_id} Date:{self.date} Value:{self.total_value}>"
+    
+
+class SwitchingRule(db.Model):
+    __tablename__ = 'switching_rule'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), unique=True, nullable=False)
+    
+    # Primary investment details (the one currently held)
+    primary_ticker = db.Column(db.String(10), nullable=False)
+    switch_threshold = db.Column(db.Float, nullable=False)
+    
+    # Backup investment details
+    backup_ticker_1 = db.Column(db.String(10), nullable=True)
+    backup_ticker_2 = db.Column(db.String(10), nullable=True) # Optional secondary backup
+
+    def __repr__(self):
+        return f"<SwitchingRule Primary:{self.primary_ticker} Backups:{self.backup_ticker_1}/{self.backup_ticker_2}>"
+    
+
+class Admin(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(150), unique=True, nullable=False)
+    password_hash = db.Column(db.String(256), nullable=False)
+
+    
